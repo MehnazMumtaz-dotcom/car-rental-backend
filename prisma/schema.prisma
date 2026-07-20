@@ -1,0 +1,276 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+///////////////////////
+// ENUMS
+///////////////////////
+
+enum Role {
+  ADMIN
+  SUB_ADMIN
+}
+
+enum CustomerStatus {
+  ACTIVE
+  SUSPENDED
+  FLAGGED
+}
+
+enum ComplaintCategory {
+  BILLING
+  VEHICLE_ISSUE
+  DRIVER_BEHAVIOR
+  BOOKING_ERROR
+  OTHER
+}
+
+enum ComplaintPriority {
+  STANDARD
+  URGENT
+}
+
+enum ComplaintStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  ESCALATED
+}
+
+enum BookingStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PARTIAL
+  PAID
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  ONLINE
+}
+
+enum CommissionType {
+  FLAT
+  PERCENTAGE
+  HYBRID
+}
+
+enum AdminStatus {
+  ACTIVE
+  INACTIVE
+}
+
+// ✅ NEW ENUM
+enum BookingSource {
+  WALK_IN
+  ONLINE
+}
+
+///////////////////////
+// MODELS
+///////////////////////
+
+model Company {
+  id         Int         @id @default(autoincrement())
+  name       String
+  createdAt  DateTime    @default(now())
+  complaints Complaint[]
+  customers  Customer[]
+  admins     Admin[]
+  bookings   Booking[]
+  config     Config?
+}
+
+model Admin {
+  id Int @id @default(autoincrement())
+
+  name     String
+  email    String @unique
+  password String
+  role   Role        @default(SUB_ADMIN)
+  status AdminStatus @default(ACTIVE)
+
+  permissions String[] @default([])
+
+  companyId Int
+  company   Company   @relation(fields: [companyId], references: [id])
+  lastLogin DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  auditLogs          AuditLog[]
+  assignedComplaints Complaint[] @relation("AssignedComplaints")
+  createdComplaints  Complaint[] @relation("CreatedComplaints")
+}
+
+model Customer {
+  id        Int            @id @default(autoincrement())
+  name      String
+  email     String?        @unique
+  phone     String?
+  status    CustomerStatus @default(ACTIVE)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  companyId Int
+  company   Company @relation(fields: [companyId], references: [id])
+
+  bookings Booking[]
+}
+
+model Booking {
+  id Int @id @default(autoincrement())
+
+  // ✅ RELATION IDS (optional for walk-in)
+  customerId Int?
+  vehicleId  Int?
+  companyId  Int
+
+  // ✅ WALK-IN DATA
+  customerName String?
+  phone        String?
+  cnic         String?
+
+  // ✅ COMMON DATA
+  city      String
+  startDate DateTime
+  endDate   DateTime
+
+  pickupTime String?
+  dropTime   String?
+
+  // ✅ PRICING
+  dailyRate  Float
+  totalPrice Float
+  advance    Float @default(0)
+  discount   Float @default(0)
+
+  // ✅ PAYMENT
+  paymentStatus PaymentStatus  @default(PENDING)
+  paymentMethod PaymentMethod?
+
+  // ✅ STATUS
+  status BookingStatus @default(ACTIVE)
+  notes  String?
+
+  // ✅ SYSTEM FLAGS
+  isOverride Boolean @default(false)
+
+  // ✅ SOURCE (CORE FEATURE)
+  source BookingSource @default(WALK_IN)
+
+  createdAt DateTime @default(now())
+
+  // ✅ RELATIONS
+  customer Customer? @relation(fields: [customerId], references: [id])
+  vehicle  Vehicle?  @relation(fields: [vehicleId], references: [id])
+  company  Company   @relation(fields: [companyId], references: [id])
+
+  complaints Complaint[]
+
+  // ✅ INDEXES (performance)
+  @@index([vehicleId])
+  @@index([customerId])
+  @@index([companyId])
+  @@index([source])
+}
+
+model Vehicle {
+  id          Int     @id @default(autoincrement())
+  name        String
+  model       String?
+  numberPlate String  @unique
+  dailyRate   Float
+
+  createdAt DateTime @default(now())
+
+  bookings Booking[]
+}
+
+model Complaint {
+  id        Int @id @default(autoincrement())
+  bookingId Int
+  companyId Int   // ✅ WAPAS ADD KARO
+
+  assignedToId Int?
+  createdById  Int?
+
+  description String
+
+  category ComplaintCategory
+  priority ComplaintPriority
+
+  status ComplaintStatus @default(OPEN)
+
+  slaDeadline DateTime?
+
+  escalated   Boolean @default(false)
+  escalatedAt DateTime?
+
+  resolvedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  booking Booking @relation(fields: [bookingId], references: [id])
+  company Company @relation(fields: [companyId], references: [id]) // ✅ IMPORTANT
+
+  assignedTo Admin? @relation("AssignedComplaints", fields: [assignedToId], references: [id])
+  createdBy  Admin? @relation("CreatedComplaints", fields: [createdById], references: [id])
+
+  @@index([status])
+  @@index([priority])
+  @@index([slaDeadline])
+  @@index([bookingId])
+  @@index([companyId]) // ✅ ADD
+  @@index([assignedToId])
+  @@index([createdById])
+}
+model Config {
+  id Int @id @default(autoincrement())
+
+  companyId Int     @unique
+  company   Company @relation(fields: [companyId], references: [id])
+
+  commissionType CommissionType @default(FLAT)
+
+  flatAmount       Float?
+  percentage       Float?
+  hybridFlat       Float?
+  hybridPercentage Float?
+
+  minBookingEnabled Boolean @default(false)
+  minBookingAmount  Float?
+
+  urgentSurchargeEnabled Boolean @default(false)
+  urgentSurchargeAmount  Float?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AuditLog {
+  id Int @id @default(autoincrement())
+
+  adminId Int
+  admin   Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  action   String
+  entity   String
+  entityId Int
+
+  meta Json?
+
+  createdAt DateTime @default(now())
+}

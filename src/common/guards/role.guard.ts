@@ -1,0 +1,65 @@
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  ForbiddenException,
+} from '@nestjs/common';
+
+import { Reflector } from '@nestjs/core';
+
+
+@Injectable()
+export class RoleGuard implements CanActivate {
+
+  constructor(
+    private reflector: Reflector,
+  ) {}
+
+
+  canActivate(
+    context: ExecutionContext,
+  ): boolean {
+
+
+   const requiredRoles = this.reflector.getAllAndOverride<string[]>(
+  'roles',
+  [context.getHandler(), context.getClass()],
+);
+
+
+    // Agar role define nahi hai
+    // to block nahi karenge
+    if (!requiredRoles || requiredRoles.length === 0) {
+      return true;
+    }
+
+
+    const request =
+      context.switchToHttp().getRequest();
+
+
+    const user = request.user;
+console.log("USER FROM TOKEN:", user);
+console.log("REQUIRED ROLES:", requiredRoles);
+
+    if (!user) {
+      throw new ForbiddenException(
+        'User not found',
+      );
+    }
+
+
+    const hasRole =
+      requiredRoles.includes(user.role);
+
+
+    if (!hasRole) {
+      throw new ForbiddenException(
+        'Access denied',
+      );
+    }
+
+
+    return true;
+  }
+}

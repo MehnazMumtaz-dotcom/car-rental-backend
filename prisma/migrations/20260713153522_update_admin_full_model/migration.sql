@@ -1,0 +1,10 @@
+-- AlterTable
+ALTER TABLE "Admin" ADD COLUMN     "city" TEXT,
+ADD COLUMN     "companyId" INTEGER,
+ADD COLUMN     "lastLogin" TIMESTAMP(3),
+ADD COLUMN     "name" TEXT,
+ADD COLUMN     "status" TEXT NOT NULL DEFAULT 'active',
+ADD COLUMN     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
+
+-- AddForeignKey
+ALTER TABLE "Admin" ADD CONSTRAINT "Admin_companyId_fkey" FOREIGN KEY ("companyId") REFERENCES "Company"("id") ON DELETE SET NULL ON UPDATE CASCADE;
