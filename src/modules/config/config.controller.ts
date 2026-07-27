@@ -11,9 +11,9 @@ import {
 } from '@nestjs/common';
 
 import { ConfigService } from './config.service';
-import { AuthGuard } from 'src/common/guards/auth.guard';
-import { RoleGuard } from 'src/common/guards/role.guard';
-import { Roles } from 'src/common/decorators/roles.decorator';
+import { AuthGuard } from '../../common/guards/auth.guard';
+import { RoleGuard } from '../../common/guards/role.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
 
 @Controller('config')
 @UseGuards(AuthGuard, RoleGuard)
