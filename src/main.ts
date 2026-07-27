@@ -1,26 +1,32 @@
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
+import { NestFactory } from "@nestjs/core";
+import { AppModule } from "../src/app.module";
+import { ExpressAdapter } from "@nestjs/platform-express";
+import express from "express";
 
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+let app: any;
 
-  app.enableCors({
-    origin: "http://localhost:5173",
+async function createApp() {
+  const server = express();
+
+  const nestApp = await NestFactory.create(
+    AppModule,
+    new ExpressAdapter(server)
+  );
+
+  nestApp.enableCors({
+    origin: "*",
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     credentials: true,
   });
 
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    }),
-  );
+  await nestApp.init();
 
-  await app.listen(process.env.PORT || 3000);
-  console.log(`🚀 Server running on http://localhost:3000`);
+  return server;
 }
 
-bootstrap();
+export default async function handler(req: any, res: any) {
+  if (!app) {
+    app = await createApp();
+  }
+  return app(req, res);
+}
