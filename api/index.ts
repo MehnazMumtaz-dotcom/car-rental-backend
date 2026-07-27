@@ -14,7 +14,10 @@ async function createApp() {
   );
 
   nestApp.enableCors({
-    origin: "http://localhost:5173",
+    origin: [
+      "http://localhost:5173",
+      "https://car-rental-admin-panel-beige.vercel.app",
+    ],
     credentials: true,
   });
 
