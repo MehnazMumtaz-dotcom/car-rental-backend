@@ -16,35 +16,31 @@ import {
 
 export class CreateComplaintDto {
 
-  @IsInt()
+  @Type(() => Number)
+@IsInt()
+@IsNotEmpty()
 companyId: number;
-  // ✅ Required
   @Type(() => Number)
   @IsInt()
+  @IsNotEmpty()
   bookingId: number;
-
-
-  // ✅ Optional (assign later)
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   assignedToId?: number;
 
-
-  // ✅ Strong validation
   @IsString()
   @IsNotEmpty()
   @MinLength(5)
   @MaxLength(500)
   description: string;
 
-
-  // ✅ Enum validation clean
   @IsOptional()
 @IsEnum(ComplaintCategory)
 category?: ComplaintCategory;
 
-  @IsEnum(ComplaintPriority)
-  priority: ComplaintPriority;
+ @IsOptional()
+@IsEnum(ComplaintPriority)
+priority?: ComplaintPriority;
 
 }

@@ -7,12 +7,12 @@ import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
 
 import { PrismaModule } from '../../database/prisma.module'; // ✅ ADD
-
+import { EmailModule } from '../../email/email.module';
 @Module({
   imports: [
     PrismaModule,
     ConfigModule,
-
+    EmailModule,
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({

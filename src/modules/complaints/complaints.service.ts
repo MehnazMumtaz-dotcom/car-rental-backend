@@ -10,41 +10,28 @@ import {
   ComplaintPriority,
   ComplaintCategory,
 } from '@prisma/client';
+
 @Injectable()
 export class ComplaintsService {
   constructor(private prisma: PrismaService) {}
 
-  // =========================
-  // CREATE COMPLAINT
-  // =========================
-async create(
-  data: CreateComplaintDto,
-  adminId: number,
-) {
+  async create(data: CreateComplaintDto, adminId: number) {
+    const booking = await this.prisma.booking.findUnique({
+      where: { id: data.bookingId },
+    });
 
-  const booking = await this.prisma.booking.findUnique({
-    where: { id: data.bookingId },
-  });
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
 
-  if (!booking) {
-    throw new NotFoundException('Booking not found');
-  }
+    if (booking.companyId !== data.companyId) {
+      throw new BadRequestException('Company mismatch');
+    }
+    const text = data.description?.toLowerCase() || '';
+let category: ComplaintCategory =
+  data.category ?? ComplaintCategory.OTHER;
 
-
-  if (booking.companyId !== data.companyId) {
-    throw new BadRequestException('Company mismatch');
-  }
-
-
-  // =========================
-  // AUTO CATEGORY DETECTION
-  // =========================
-
-  let category: ComplaintCategory = ComplaintCategory.OTHER;
-
-  const text = data.description.toLowerCase();
-
-
+if (!data.category) {
   if (
     text.includes('payment') ||
     text.includes('charge') ||
@@ -52,135 +39,122 @@ async create(
     text.includes('refund')
   ) {
     category = ComplaintCategory.BILLING;
-  }
-
-  else if (
+  } else if (
     text.includes('car') ||
     text.includes('vehicle') ||
     text.includes('damage') ||
     text.includes('engine')
   ) {
     category = ComplaintCategory.VEHICLE_ISSUE;
-  }
-
-  else if (
+  } else if (
     text.includes('driver') ||
     text.includes('rude') ||
     text.includes('behavior')
   ) {
     category = ComplaintCategory.DRIVER_BEHAVIOR;
-  }
-
-  else if (
+  } else if (
     text.includes('booking') ||
     text.includes('cancel') ||
     text.includes('reservation')
   ) {
     category = ComplaintCategory.BOOKING_ERROR;
   }
+}
 
+let priority: ComplaintPriority =
+ data.priority ?? ComplaintPriority.STANDARD;
 
-  // =========================
-  // SLA LOGIC
-  // =========================
+if (!data.priority) {
+  if (text.includes('urgent') || text.includes('immediately')) {
+    priority = ComplaintPriority.URGENT;
+  }
+}
 
-  let slaDays = 14;
+let slaDays = 14;
 
-  if (data.priority === ComplaintPriority.URGENT) {
-    slaDays = 7;
+if (priority === ComplaintPriority.URGENT) {
+  slaDays = 7;
+}
+
+const slaDeadline = new Date(
+  Date.now() + slaDays * 24 * 60 * 60 * 1000,
+);
+    const complaint = await this.prisma.complaint.create({
+    data: {
+  ...data,
+  category,
+  priority, 
+  createdById: adminId,
+  status: ComplaintStatus.OPEN,
+  slaDeadline,
+},
+    });
+
+    await this.prisma.notification.create({
+      data: {
+        title: 'New Complaint Created',
+        message: `Complaint #${complaint.id} has been created`,
+        type: 'COMPLAINT',
+        companyId: complaint.companyId,
+      },
+    });
+
+    return complaint;
+  }
+
+async assignComplaint(id: number, adminId: number) {
+
+  const complaint = await this.prisma.complaint.findUnique({
+    where: { id },
+  });
+
+  if (!complaint) {
+    throw new NotFoundException('Complaint not found');
   }
 
 
-  const slaDeadline = new Date(
-    Date.now() + slaDays * 24 * 60 * 60 * 1000,
-  );
+  const admin = await this.prisma.admin.findUnique({
+    where: { id: adminId },
+  });
+
+  if (!admin) {
+  throw new NotFoundException('Admin not found');
+}
 
 
-  // =========================
-  // CREATE COMPLAINT
-  // =========================
-console.log("ADMIN ID SAVING:", adminId);
-  return this.prisma.complaint.create({
+if (admin.companyId !== complaint.companyId) {
+  throw new BadRequestException('Company mismatch');
+}
+
+
+const updated = await this.prisma.complaint.update({
+
+  where: { id },
+
   data: {
-    ...data,
-    category,
-    companyId: data.companyId,
-    createdById: adminId,
-    status: ComplaintStatus.OPEN,
-    slaDeadline,
+    assignedToId: adminId,
+    status: ComplaintStatus.IN_PROGRESS,
   },
 
   include: {
-  booking: true,
-  company: true,
-  assignedTo: {
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      status: true,
-    },
+    assignedTo: true,
   },
-  createdBy: {
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-    },
-  },
-}
+
 });
+
+await this.prisma.notification.create({
+  data: {
+    title: 'Complaint Assigned',
+    message: `Complaint #${id} assigned to admin ${admin.name}`,
+    type: 'COMPLAINT',
+    companyId: complaint.companyId,
+  },
+});
+
+
+return updated;
+
 }
-  // =========================
-  // ASSIGN COMPLAINT
-  // =========================
-
-  async assignComplaint(id: number, adminId: number) {
-    const complaint = await this.prisma.complaint.findUnique({
-      where: { id },
-      include: { company: true },
-    });
-
-    if (!complaint) {
-      throw new NotFoundException('Complaint not found');
-    }
-
-    // ✅ admin check
-    const admin = await this.prisma.admin.findUnique({
-      where: { id: adminId },
-    });
-
-    if (!admin) {
-      throw new NotFoundException('Admin not found');
-    }
-
-    // ✅ company match (MULTI-TENANT SAFETY)
-    if (admin.companyId !== complaint.companyId) {
-      throw new BadRequestException(
-        'Admin does not belong to this company',
-      );
-    }
-
-    return this.prisma.complaint.update({
-      where: { id },
-
-      data: {
-        assignedToId: adminId,
-       status: ComplaintStatus.IN_PROGRESS,
-      },
-
-      include: {
-        assignedTo: true,
-      },
-    });
-  }
-
-  // =========================
-  // RESOLVE COMPLAINT
-  // =========================
-
   async resolveComplaint(id: number) {
     const complaint = await this.prisma.complaint.findUnique({
       where: { id },
@@ -189,21 +163,31 @@ console.log("ADMIN ID SAVING:", adminId);
     if (!complaint) {
       throw new NotFoundException('Complaint not found');
     }
-
-    return this.prisma.complaint.update({
+      if (!complaint.assignedToId) {
+    throw new BadRequestException('Assign complaint first');
+  }
+if (complaint.status === ComplaintStatus.RESOLVED) {
+  throw new BadRequestException('Already resolved');
+}
+    const updated = await this.prisma.complaint.update({
       where: { id },
-
       data: {
-       status: ComplaintStatus.RESOLVED,
+        status: ComplaintStatus.RESOLVED,
         resolvedAt: new Date(),
       },
     });
+
+    await this.prisma.notification.create({
+      data: {
+        title: 'Complaint Resolved',
+        message: `Complaint #${id} has been resolved`,
+        type: 'COMPLAINT',
+        companyId: complaint.companyId,
+      },
+    });
+
+    return updated;
   }
-
-  // =========================
-  // GET ALL + FILTERS
-  // =========================
-
   async getAll(filters?: {
     status?: string;
     priority?: string;
@@ -211,39 +195,24 @@ console.log("ADMIN ID SAVING:", adminId);
   }) {
     const where: any = {};
 
-    if (filters?.status) {
-      where.status = filters.status;
-    }
-
-    if (filters?.priority) {
-      where.priority = filters.priority;
-    }
-
-    if (filters?.companyId) {
-      where.companyId = filters.companyId;
-    }
+    if (filters?.status) where.status = filters.status;
+    if (filters?.priority) where.priority = filters.priority;
+    if (filters?.companyId) where.companyId = filters.companyId;
 
     return this.prisma.complaint.findMany({
       where,
-
       include: {
         booking: true,
         company: true,
         createdBy: true,
         assignedTo: true,
       },
-
       orderBy: {
         createdAt: 'desc',
       },
     });
   }
-    // =========================
-  // DELETE COMPLAINT
-  // =========================
-
   async deleteComplaint(id: number) {
-
     const complaint = await this.prisma.complaint.findUnique({
       where: { id },
     });
@@ -251,9 +220,16 @@ console.log("ADMIN ID SAVING:", adminId);
     if (!complaint) {
       throw new NotFoundException('Complaint not found');
     }
+     if (complaint.status === ComplaintStatus.RESOLVED) {
+    throw new BadRequestException('Already closed');
+  }
 
-    return this.prisma.complaint.delete({
-      where: { id },
-    });
+  return this.prisma.complaint.update({
+  where: { id },
+  data: {
+   status: ComplaintStatus.RESOLVED
+  },
+});
+   
   }
 }

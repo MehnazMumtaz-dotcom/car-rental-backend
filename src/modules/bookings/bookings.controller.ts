@@ -28,7 +28,6 @@ import { Roles } from 'src/common/decorators/roles.decorator';
 export class BookingsController {
   constructor(private readonly bookingsService: BookingsService) {}
 
-  // 🔥 helper
   resolveSource(dto: CreateBookingDto) {
     return (
       dto.source ??
@@ -38,7 +37,6 @@ export class BookingsController {
     );
   }
 
-  // 🔥 common error handler
   handleConflictError(err: any) {
     if (err?.response?.conflictBooking) {
       throw new BadRequestException({
@@ -49,7 +47,6 @@ export class BookingsController {
     throw err;
   }
 
-  // ➕ CREATE
   @Post()
   @Roles('ADMIN')
   async create(@Body() dto: CreateBookingDto) {
@@ -63,7 +60,6 @@ export class BookingsController {
     }
   }
 
-  // ⚠️ OVERRIDE
   @Post('override')
   @Roles('ADMIN')
   async overrideBooking(@Body() dto: CreateBookingDto) {
@@ -77,21 +73,18 @@ export class BookingsController {
     }
   }
 
-  // 📄 GET ALL
   @Get()
   @Roles('ADMIN', 'SUB_ADMIN')
   findAll() {
     return this.bookingsService.findAll();
   }
 
-  // 🔍 GET ONE
   @Get(':id')
   @Roles('ADMIN', 'SUB_ADMIN')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.bookingsService.findOne(id);
   }
 
-  // ✏️ UPDATE
   @Patch(':id')
   @Roles('ADMIN')
   async patchUpdate(
@@ -105,7 +98,6 @@ export class BookingsController {
     }
   }
 
-  // PUT
   @Put(':id')
   @Roles('ADMIN')
  update(
@@ -115,7 +107,6 @@ export class BookingsController {
   return this.patchUpdate(id, dto);
 }
 
-  // ❌ DELETE
   @Delete(':id')
   @Roles('ADMIN')
   remove(@Param('id', ParseIntPipe) id: number) {

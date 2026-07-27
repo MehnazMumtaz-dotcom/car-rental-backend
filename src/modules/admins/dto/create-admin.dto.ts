@@ -28,14 +28,11 @@ export class CreateAdminDto {
   @IsInt()
   companyId: number;
 
-
-  // ✅ ADMIN / SUB_ADMIN
   @IsOptional()
   @IsEnum(Role)
   role?: Role;
 
 
-  // ✅ permissions array
   @IsOptional()
   @IsArray()
   permissions?: string[];

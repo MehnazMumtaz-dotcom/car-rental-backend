@@ -2,7 +2,7 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-
+import { EmailService } from '../../email/email.service';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../database/prisma.service';
 
@@ -11,20 +11,14 @@ import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
-
-
-  // temporary 2FA storage
   private twoFACodes = new Map<string, { code: string; expiresAt: number }>();
 
 
   constructor(
     private jwtService: JwtService,
     private prisma: PrismaService,
+     private emailService: EmailService,
   ) {}
-
-
-
-  // ✅ FIND ADMIN FROM DATABASE
   async validateUser(
     email: string,
     password: string,
@@ -67,12 +61,6 @@ export class AuthService {
 
     return admin;
   }
-
-
-
-
-
-  // ✅ LOGIN + GENERATE 2FA
   async login(
     email:string,
     password:string,
@@ -91,38 +79,24 @@ export class AuthService {
 
 
 
-    const expiresAt = Date.now() + 5 * 60 * 1000;
+    const expiresAt = Date.now() + 10 * 60 * 1000;
 
     this.twoFACodes.set(
       email,
       { code, expiresAt },
     );
 
-
-
-    console.log(
-      '2FA Code:',
-      code,
-    );
-
-
-
+      await this.emailService.sendOTP(email, code);
     return {
       message:'2FA code sent',
     };
 
   }
-
-
-
-
-
-
-
-  // ✅ VERIFY 2FA + JWT
   async verify2FA(
     email:string,
     code:string,
+    userAgent?: string | null,
+    ip?: string | null,
   ) {
 
 
@@ -163,15 +137,7 @@ export class AuthService {
       );
 
     }
-
-
-
-    // ✅ remove used code
     this.twoFACodes.delete(email);
-
-
-
-    // ✅ update last login
     await this.prisma.admin.update({
 
       where:{
@@ -182,6 +148,20 @@ export class AuthService {
         lastLogin:new Date(),
       },
 
+    });
+    await this.prisma.profile.upsert({
+      where:{
+        adminId: admin.id,
+      },
+      update:{
+        lastLoginDevice: userAgent,
+        lastLoginIp: ip,
+      },
+      create:{
+        adminId: admin.id,
+        lastLoginDevice: userAgent,
+        lastLoginIp: ip,
+      },
     });
 
 

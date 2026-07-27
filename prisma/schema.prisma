@@ -6,9 +6,6 @@ datasource db {
   provider = "postgresql"
 }
 
-///////////////////////
-// ENUMS
-///////////////////////
 
 enum Role {
   ADMIN
@@ -70,15 +67,11 @@ enum AdminStatus {
   INACTIVE
 }
 
-// ✅ NEW ENUM
 enum BookingSource {
   WALK_IN
   ONLINE
 }
 
-///////////////////////
-// MODELS
-///////////////////////
 
 model Company {
   id         Int         @id @default(autoincrement())
@@ -112,6 +105,7 @@ model Admin {
   auditLogs          AuditLog[]
   assignedComplaints Complaint[] @relation("AssignedComplaints")
   createdComplaints  Complaint[] @relation("CreatedComplaints")
+  profile Profile?
 }
 
 model Customer {
@@ -132,17 +126,15 @@ model Customer {
 model Booking {
   id Int @id @default(autoincrement())
 
-  // ✅ RELATION IDS (optional for walk-in)
   customerId Int?
   vehicleId  Int?
   companyId  Int
 
-  // ✅ WALK-IN DATA
   customerName String?
   phone        String?
   cnic         String?
 
-  // ✅ COMMON DATA
+
   city      String
   startDate DateTime
   endDate   DateTime
@@ -150,36 +142,31 @@ model Booking {
   pickupTime String?
   dropTime   String?
 
-  // ✅ PRICING
+
   dailyRate  Float
   totalPrice Float
   advance    Float @default(0)
   discount   Float @default(0)
 
-  // ✅ PAYMENT
   paymentStatus PaymentStatus  @default(PENDING)
   paymentMethod PaymentMethod?
 
-  // ✅ STATUS
   status BookingStatus @default(ACTIVE)
   notes  String?
 
-  // ✅ SYSTEM FLAGS
+
   isOverride Boolean @default(false)
 
-  // ✅ SOURCE (CORE FEATURE)
   source BookingSource @default(WALK_IN)
 
   createdAt DateTime @default(now())
 
-  // ✅ RELATIONS
   customer Customer? @relation(fields: [customerId], references: [id])
   vehicle  Vehicle?  @relation(fields: [vehicleId], references: [id])
   company  Company   @relation(fields: [companyId], references: [id])
 
   complaints Complaint[]
 
-  // ✅ INDEXES (performance)
   @@index([vehicleId])
   @@index([customerId])
   @@index([companyId])
@@ -201,7 +188,7 @@ model Vehicle {
 model Complaint {
   id        Int @id @default(autoincrement())
   bookingId Int
-  companyId Int   // ✅ WAPAS ADD KARO
+  companyId Int   
 
   assignedToId Int?
   createdById  Int?
@@ -233,7 +220,7 @@ model Complaint {
   @@index([priority])
   @@index([slaDeadline])
   @@index([bookingId])
-  @@index([companyId]) // ✅ ADD
+  @@index([companyId])
   @@index([assignedToId])
   @@index([createdById])
 }
@@ -273,4 +260,36 @@ model AuditLog {
   meta Json?
 
   createdAt DateTime @default(now())
+}
+model Notification {
+  id        Int      @id @default(autoincrement())
+  title     String
+  message   String
+  type      String
+  companyId Int
+  readBy    Int[]    @default([])  
+  createdAt DateTime @default(now())
+
+  @@index([companyId])             
+}
+model Profile {
+  id Int @id @default(autoincrement())
+
+
+  adminId Int @unique
+  admin   Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  avatar   String?
+  phone    String?
+
+  otp        String?
+  otpExpiry  DateTime?
+
+  lastLoginIp     String?
+  lastLoginDevice String?
+
+  isVerified Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

@@ -27,10 +27,6 @@ export class AdminController {
   constructor(
     private service: AdminService,
   ) {}
-
-
-
-  // ✅ CREATE ADMIN
   @UseGuards(AuthGuard, RoleGuard)
   @Roles('ADMIN')
   @Post()
@@ -45,11 +41,6 @@ export class AdminController {
     );
 
   }
-
-
-
-
-  // ✅ GET ALL ADMINS
   @UseGuards(AuthGuard, RoleGuard)
   @Roles('ADMIN')
   @Get()
@@ -58,11 +49,6 @@ export class AdminController {
     return this.service.findAll();
 
   }
-
-
-
-
-  // ✅ GET ONE ADMIN
   @UseGuards(AuthGuard, RoleGuard)
   @Roles('ADMIN')
   @Get(':id')
@@ -75,12 +61,6 @@ export class AdminController {
     );
 
   }
-
-
-
-
-
-  // ✅ FULL UPDATE
   @UseGuards(AuthGuard, RoleGuard)
   @Roles('ADMIN')
   @Put(':id')
@@ -97,12 +77,6 @@ export class AdminController {
     );
 
   }
-
-
-
-
-
-  // ✅ PATCH UPDATE
   @UseGuards(AuthGuard, RoleGuard)
   @Roles('ADMIN')
   @Patch(':id')
@@ -119,12 +93,6 @@ export class AdminController {
     );
 
   }
-
-
-
-
-
-  // ✅ DELETE ADMIN
   @UseGuards(AuthGuard, RoleGuard)
   @Roles('ADMIN')
   @Delete(':id')

@@ -9,11 +9,6 @@ export class AuditLogsService {
   constructor(
     private prisma: PrismaService,
   ) {}
-
-
-
-
-  // CREATE AUDIT LOG
   async createLog(data:{
     adminId:number;
     action:string;
@@ -43,11 +38,6 @@ export class AuditLogsService {
 
   }
 
-
-
-
-
-  // GET ALL AUDIT LOGS
   async findAll(){
 
 

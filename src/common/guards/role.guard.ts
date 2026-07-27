@@ -26,9 +26,6 @@ export class RoleGuard implements CanActivate {
   [context.getHandler(), context.getClass()],
 );
 
-
-    // Agar role define nahi hai
-    // to block nahi karenge
     if (!requiredRoles || requiredRoles.length === 0) {
       return true;
     }

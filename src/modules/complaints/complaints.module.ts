@@ -6,10 +6,11 @@ import { ComplaintsScheduler } from './scheduler/complaints.scheduler';
 
 import { PrismaService } from 'src/database/prisma.service';
 import { AuthModule } from '../auth/auth.module';
-
+import { NotificationModule } from 'src/notifications/notification.module';
 @Module({
   imports: [
     AuthModule,
+    NotificationModule,
   ],
 
   controllers: [

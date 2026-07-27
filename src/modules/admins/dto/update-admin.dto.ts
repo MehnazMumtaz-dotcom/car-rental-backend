@@ -40,7 +40,6 @@ export class UpdateAdminDto {
   @IsArray()
   permissions?: string[];
 
-     // ✅ FIX STATUS
   @IsOptional()
   @IsEnum(AdminStatus)
   status?: AdminStatus;

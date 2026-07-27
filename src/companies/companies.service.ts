@@ -8,8 +8,6 @@ export class CompaniesService {
     private prisma: PrismaService,
   ) {}
 
-
-  // CREATE COMPANY (POST)
   async create(dto: any) {
     return this.prisma.company.create({
       data: {
@@ -18,8 +16,6 @@ export class CompaniesService {
     });
   }
 
-
-  // GET ALL COMPANIES (GET)
   async findAll() {
     return this.prisma.company.findMany({
       orderBy: {
@@ -28,8 +24,6 @@ export class CompaniesService {
     });
   }
 
-
-  // GET SINGLE COMPANY (GET BY ID)
   async findOne(id: number) {
     return this.prisma.company.findUnique({
       where: {
@@ -38,8 +32,6 @@ export class CompaniesService {
     });
   }
 
-
-  // UPDATE COMPANY (PUT)
   async update(id: number, dto: any) {
     return this.prisma.company.update({
       where: {
@@ -51,8 +43,6 @@ export class CompaniesService {
     });
   }
 
-
-  // PARTIAL UPDATE COMPANY (PATCH)
   async patch(id: number, dto: any) {
     return this.prisma.company.update({
       where: {
@@ -66,8 +56,6 @@ export class CompaniesService {
     });
   }
 
-
-  // DELETE COMPANY (DELETE)
   async remove(id: number) {
     return this.prisma.company.delete({
       where: {

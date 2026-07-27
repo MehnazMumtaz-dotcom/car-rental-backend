@@ -6,9 +6,6 @@ import { CustomerStatus } from '@prisma/client';
 export class CustomersService {
   constructor(private prisma: PrismaService) {}
 
-  // =========================
-  // CREATE CUSTOMER
-  // =========================
   async create(dto: any) {
     return this.prisma.customer.create({
       data: {
@@ -25,9 +22,6 @@ export class CustomersService {
     });
   }
 
-  // =========================
-  // GET ALL
-  // =========================
   async findAll(companyId?: number) {
     return this.prisma.customer.findMany({
       where: companyId ? { companyId } : {},
@@ -35,10 +29,6 @@ export class CustomersService {
       include: { company: true },
     });
   }
-
-  // =========================
-  // GET ONE
-  // =========================
   async findOne(id: number) {
     return this.prisma.customer.findUnique({
       where: { id },
@@ -46,9 +36,6 @@ export class CustomersService {
     });
   }
 
-  // =========================
-  // GET ONE BY COMPANY
-  // =========================
   async findOneByCompany(companyId: number, id: number) {
     return this.prisma.customer.findFirst({
       where: {
@@ -59,9 +46,6 @@ export class CustomersService {
     });
   }
 
-  // =========================
-  // UPDATE NORMAL
-  // =========================
   async update(id: number, dto: any) {
     this.validateId(id);
 
@@ -72,9 +56,6 @@ export class CustomersService {
     });
   }
 
-  // =========================
-  // UPDATE BY COMPANY
-  // =========================
   async updateByCompany(companyId: number, id: number, dto: any) {
     this.validateId(id);
 
@@ -84,9 +65,6 @@ export class CustomersService {
     });
   }
 
-  // =========================
-  // COMMON UPDATE DATA
-  // =========================
   private updateData(dto: any) {
     return {
       ...(dto.name && { name: dto.name.trim() }),
@@ -107,9 +85,6 @@ export class CustomersService {
     };
   }
 
-  // =========================
-  // ENUM SAFE PARSE
-  // =========================
   private parseStatus(status: string): CustomerStatus {
     const value = status.toUpperCase();
 
@@ -122,18 +97,12 @@ export class CustomersService {
     return CustomerStatus[value];
   }
 
-  // =========================
-  // VALIDATE ID
-  // =========================
   private validateId(id: number) {
     if (!id || isNaN(id)) {
       throw new BadRequestException('Invalid ID');
     }
   }
 
-  // =========================
-  // DELETE NORMAL
-  // =========================
   async remove(id: number) {
     this.validateId(id);
 
@@ -142,9 +111,6 @@ export class CustomersService {
     });
   }
 
-  // =========================
-  // DELETE BY COMPANY
-  // =========================
   async removeByCompany(companyId: number, id: number) {
     this.validateId(id);
 

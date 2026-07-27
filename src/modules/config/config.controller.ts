@@ -20,28 +20,23 @@ import { Roles } from 'src/common/decorators/roles.decorator';
 export class ConfigController {
   constructor(private readonly configService: ConfigService) {}
 
-  // 🟢 CREATE CONFIG
   @Post()
   @Roles('ADMIN')
   createConfig(@Body() body: any) {
     return this.configService.createConfig(body);
   }
-
-  // 🟢 GET CONFIG BY COMPANY ID
   @Get(':companyId')
   @Roles('ADMIN')
   getConfig(@Param('companyId') companyId: string) {
     return this.configService.getConfig(Number(companyId));
   }
 
-  // 🟢 GET ALL CONFIGS
   @Get()
   @Roles('ADMIN')
   getAllConfigs() {
     return this.configService.getAllConfigs();
   }
 
-  // 🟢 FULL UPDATE (PUT)
   @Put(':companyId')
   @Roles('ADMIN')
   updateConfig(
@@ -51,7 +46,6 @@ export class ConfigController {
     return this.configService.updateConfig(Number(companyId), body);
   }
 
-  // 🟡 PARTIAL UPDATE (PATCH)
   @Patch(':companyId')
   @Roles('ADMIN')
   patchConfig(
@@ -61,7 +55,6 @@ export class ConfigController {
     return this.configService.patchConfig(Number(companyId), body);
   }
 
-  // 🔴 DELETE CONFIG
   @Delete(':companyId')
   @Roles('ADMIN')
   deleteConfig(@Param('companyId') companyId: string) {

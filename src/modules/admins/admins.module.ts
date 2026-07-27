@@ -11,7 +11,7 @@ import { AuditLogsModule } from '../audit-logs/audit-logs.module';
   imports: [
     PrismaModule,
     AuthModule,
-    AuditLogsModule, // ✅ ADD
+    AuditLogsModule,
   ],
 
   controllers: [

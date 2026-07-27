@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { ScheduleModule } from '@nestjs/schedule'; // 🔥 ADD THIS
+import { ScheduleModule } from '@nestjs/schedule';
 
 import { PrismaModule } from './database/prisma.module';
 
@@ -12,11 +12,13 @@ import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
 import { BookingsModule } from './modules/bookings/bookings.module';
 import { VehicleModule } from './modules/vehicle/vehicle.module';
 
-// ✅ EXISTING CONFIG MODULE
 import { ConfigModule as AppConfigModule } from './modules/config/config.module';
-
-// ✅ 🔥 ADD THIS (Complaints Module)
 import { ComplaintsModule } from './modules/complaints/complaints.module';
+import { ReportsModule } from './modules/reports/reports.module';
+import { NotificationModule } from './notifications/notification.module';
+
+import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { ProfileModule } from './profile/profile.module';
 
 import { AppController } from './app.controller';
 
@@ -26,7 +28,6 @@ import { AppController } from './app.controller';
       isGlobal: true,
     }),
 
-    // 🔥 REQUIRED FOR CRON (SLA escalation)
     ScheduleModule.forRoot(),
 
     PrismaModule,
@@ -40,11 +41,14 @@ import { AppController } from './app.controller';
     BookingsModule,
     VehicleModule,
 
-    // ✅ YOUR CONFIG MODULE
     AppConfigModule,
 
-    // 🔥 ADD THIS LAST (order not strict but clean)
+    NotificationModule,
+    ReportsModule,
     ComplaintsModule,
+    DashboardModule,
+
+    ProfileModule,
   ],
 
   controllers: [AppController],

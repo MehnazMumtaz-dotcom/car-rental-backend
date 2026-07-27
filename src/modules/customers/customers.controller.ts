@@ -25,14 +25,12 @@ export class CustomersController {
     private readonly customersService: CustomersService,
   ) {}
 
-  // CREATE CUSTOMER
   @Post()
   @Roles('ADMIN')
   create(@Body() dto: CreateCustomerDto) {
     return this.customersService.create(dto);
   }
 
-  // GET ALL CUSTOMERS
   @Get()
 @Roles('ADMIN', 'MANAGER')
 findAll(@Req() req) {
@@ -41,14 +39,12 @@ findAll(@Req() req) {
   );
 }
 
-  // GET ALL CUSTOMERS BY COMPANY
   @Get('company/:companyId')
   @Roles('ADMIN', 'MANAGER')
   findAllByCompany(@Param('companyId') companyId: string) {
     return this.customersService.findAll(Number(companyId));
   }
 
-  // GET SINGLE CUSTOMER BY COMPANY
   @Get('company/:companyId/:id')
   @Roles('ADMIN', 'MANAGER')
   findOneByCompany(
@@ -61,14 +57,12 @@ findAll(@Req() req) {
     );
   }
 
-  // GET SINGLE CUSTOMER
   @Get(':id')
   @Roles('ADMIN', 'MANAGER')
   findOne(@Param('id') id: string) {
     return this.customersService.findOne(Number(id));
   }
 
-  // PATCH NORMAL
   @Patch(':id')
   @Roles('ADMIN')
   patch(
@@ -81,7 +75,6 @@ findAll(@Req() req) {
     );
   }
 
-  // PATCH BY COMPANY
   @Patch('company/:companyId/:id')
   @Roles('ADMIN')
   patchByCompany(
@@ -95,8 +88,6 @@ findAll(@Req() req) {
       dto,
     );
   }
-
-  // PUT NORMAL
   @Put(':id')
   @Roles('ADMIN')
   put(
@@ -108,8 +99,6 @@ findAll(@Req() req) {
       dto,
     );
   }
-
-  // PUT BY COMPANY
   @Put('company/:companyId/:id')
   @Roles('ADMIN')
   putByCompany(
@@ -124,7 +113,6 @@ findAll(@Req() req) {
     );
   }
 
-  // DELETE NORMAL
   @Delete(':id')
   @Roles('ADMIN')
   remove(@Param('id') id: string) {
@@ -133,7 +121,6 @@ findAll(@Req() req) {
     );
   }
 
-  // DELETE BY COMPANY
   @Delete('company/:companyId/:id')
   @Roles('ADMIN')
   removeByCompany(

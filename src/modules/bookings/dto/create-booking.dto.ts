@@ -32,8 +32,6 @@ export class CreateBookingDto {
   @Type(() => Number)
   @IsInt()
   companyId: number;
-
-  // 🔥 empty string → undefined fix
   @IsOptional()
   @Transform(emptyStringToUndefined)
   @IsString()
@@ -53,7 +51,6 @@ export class CreateBookingDto {
   @IsNotEmpty()
   city: string;
 
-  // 🔥 stronger date handling
   @IsDateString()
   startDate: string;
 

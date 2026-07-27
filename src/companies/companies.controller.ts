@@ -19,21 +19,16 @@ export class CompaniesController {
   ) {}
 
 
-  // CREATE COMPANY (POST)
   @Post()
   create(@Body() dto: any) {
     return this.companiesService.create(dto);
   }
 
-
-  // GET ALL COMPANIES (GET)
   @Get()
   findAll() {
     return this.companiesService.findAll();
   }
 
-
-  // GET SINGLE COMPANY (GET BY ID)
   @Get(':id')
   findOne(
     @Param('id') id: string,
@@ -41,8 +36,6 @@ export class CompaniesController {
     return this.companiesService.findOne(Number(id));
   }
 
-
-  // UPDATE FULL COMPANY (PUT)
   @Put(':id')
   replace(
     @Param('id') id: string,
@@ -52,7 +45,6 @@ export class CompaniesController {
   }
 
 
-  // PARTIAL UPDATE COMPANY (PATCH)
   @Patch(':id')
   patch(
     @Param('id') id: string,
@@ -62,7 +54,6 @@ export class CompaniesController {
   }
 
 
-  // DELETE COMPANY (DELETE)
   @Delete(':id')
   remove(
     @Param('id') id: string,

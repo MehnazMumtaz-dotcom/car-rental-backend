@@ -9,7 +9,6 @@ import { PrismaService } from 'src/database/prisma.service';
 export class ConfigService {
   constructor(private prisma: PrismaService) {}
 
-  // 🟢 CREATE CONFIG
   async createConfig(data: any) {
     const existing = await this.prisma.config.findUnique({
       where: { companyId: data.companyId },
@@ -26,7 +25,6 @@ export class ConfigService {
     });
   }
 
-  // 🟢 GET CONFIG
   async getConfig(companyId: number) {
     let config = await this.prisma.config.findUnique({
       where: { companyId },
@@ -41,14 +39,12 @@ export class ConfigService {
 
     return config;
   }
-  // 🟢 GET ALL CONFIGS
   async getAllConfigs() {
     return this.prisma.config.findMany({
       include: { company: true },
     });
   }
 
-  // 🟢 PUT (FULL UPDATE)
   async updateConfig(companyId: number, data: any) {
     const existing = await this.prisma.config.findUnique({
       where: { companyId },
@@ -58,7 +54,6 @@ export class ConfigService {
       throw new NotFoundException('Config not found');
     }
 
-    // 🔥 Clean logic
     if (data.commissionType === 'FLAT') {
       data.percentage = null;
       data.hybridFlat = null;
@@ -82,7 +77,6 @@ export class ConfigService {
     });
   }
 
-  // 🟡 PATCH (PARTIAL UPDATE) ✅ FIXED
   async patchConfig(companyId: number, data: any) {
     const existing = await this.prisma.config.findUnique({
       where: { companyId },
@@ -97,7 +91,6 @@ export class ConfigService {
       ...data,
     };
 
-    // 🔥 Clean logic
     if (updatedData.commissionType === 'FLAT') {
       updatedData.percentage = null;
       updatedData.hybridFlat = null;
@@ -121,7 +114,6 @@ export class ConfigService {
     });
   }
 
-  // 🔴 DELETE CONFIG
   async deleteConfig(companyId: number) {
     const existing = await this.prisma.config.findUnique({
       where: { companyId },
