@@ -1,32 +1,17 @@
 import { NestFactory } from "@nestjs/core";
-import { AppModule } from "../src/app.module";
-import { ExpressAdapter } from "@nestjs/platform-express";
-import express from "express";
+import { AppModule } from "./app.module";
 
-let app: any;
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
 
-async function createApp() {
-  const server = express();
-
-  const nestApp = await NestFactory.create(
-    AppModule,
-    new ExpressAdapter(server)
-  );
-
-  nestApp.enableCors({
-    origin: "*",
-    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+  app.enableCors({
+    origin: "http://localhost:5173",
     credentials: true,
   });
 
-  await nestApp.init();
+  await app.listen(3000);
 
-  return server;
+  console.log("Server running on http://localhost:3000");
 }
 
-export default async function handler(req: any, res: any) {
-  if (!app) {
-    app = await createApp();
-  }
-  return app(req, res);
-}
+bootstrap();
