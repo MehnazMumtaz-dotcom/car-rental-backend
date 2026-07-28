@@ -10,6 +10,7 @@ import {
   UseGuards,
   BadRequestException,
   ParseIntPipe,
+  Request,
 } from '@nestjs/common';
 
 import { BookingsService } from './bookings.service';
@@ -49,12 +50,15 @@ export class BookingsController {
 
   @Post()
   @Roles('ADMIN')
-  async create(@Body() dto: CreateBookingDto) {
+  async create(@Body() dto: CreateBookingDto, @Request() req) {
     try {
-      return await this.bookingsService.create({
-        ...dto,
-        source: this.resolveSource(dto),
-      });
+      return await this.bookingsService.create(
+        {
+          ...dto,
+          source: this.resolveSource(dto),
+        },
+        req.user.companyId,
+      );
     } catch (err) {
       this.handleConflictError(err);
     }
@@ -62,12 +66,15 @@ export class BookingsController {
 
   @Post('override')
   @Roles('ADMIN')
-  async overrideBooking(@Body() dto: CreateBookingDto) {
+  async overrideBooking(@Body() dto: CreateBookingDto, @Request() req) {
     try {
-      return await this.bookingsService.createOverride({
-        ...dto,
-        source: this.resolveSource(dto),
-      });
+      return await this.bookingsService.createOverride(
+        {
+          ...dto,
+          source: this.resolveSource(dto),
+        },
+        req.user.companyId,
+      );
     } catch (err) {
       this.handleConflictError(err);
     }
@@ -75,14 +82,14 @@ export class BookingsController {
 
   @Get()
   @Roles('ADMIN', 'SUB_ADMIN')
-  findAll() {
-    return this.bookingsService.findAll();
+  findAll(@Request() req) {
+    return this.bookingsService.findAll(req.user.companyId);
   }
 
   @Get(':id')
   @Roles('ADMIN', 'SUB_ADMIN')
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.bookingsService.findOne(id);
+  findOne(@Param('id', ParseIntPipe) id: number, @Request() req) {
+    return this.bookingsService.findOne(id, req.user.companyId);
   }
 
   @Patch(':id')
@@ -90,9 +97,10 @@ export class BookingsController {
   async patchUpdate(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateBookingDto,
+    @Request() req,
   ) {
     try {
-      return await this.bookingsService.update(id, dto);
+      return await this.bookingsService.update(id, dto, req.user.companyId);
     } catch (err) {
       this.handleConflictError(err);
     }
@@ -100,16 +108,17 @@ export class BookingsController {
 
   @Put(':id')
   @Roles('ADMIN')
- update(
-  @Param('id', ParseIntPipe) id: number,
-  @Body() dto: UpdateBookingDto,
-) {
-  return this.patchUpdate(id, dto);
-}
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateBookingDto,
+    @Request() req,
+  ) {
+    return this.patchUpdate(id, dto, req);
+  }
 
   @Delete(':id')
   @Roles('ADMIN')
-  remove(@Param('id', ParseIntPipe) id: number) {
-    return this.bookingsService.remove(id);
+  remove(@Param('id', ParseIntPipe) id: number, @Request() req) {
+    return this.bookingsService.remove(id, req.user.companyId);
   }
 }

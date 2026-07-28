@@ -1,37 +1,39 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Query, Request, UseGuards } from '@nestjs/common';
 import { DashboardService } from './dashboard.service';
+import { AuthGuard } from '../../common/guards/auth.guard';
 
 @Controller('dashboard')
+@UseGuards(AuthGuard)
 export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
 
   @Get('stats')
-  getStats() {
-    return this.dashboardService.getStats();
+  getStats(@Request() req) {
+    return this.dashboardService.getStats(req.user.companyId);
   }
 
- @Get('booking-trend')
-getBookingTrend(@Query('type') type: 'week' | 'month') {
-  return this.dashboardService.getBookingTrend(type);
-}
+  @Get('booking-trend')
+  getBookingTrend(@Query('type') type: 'week' | 'month', @Request() req) {
+    return this.dashboardService.getBookingTrend(req.user.companyId, type);
+  }
 
   @Get('complaint-summary')
-  getComplaintSummary() {
-    return this.dashboardService.getComplaintSummary();
+  getComplaintSummary(@Request() req) {
+    return this.dashboardService.getComplaintSummary(req.user.companyId);
   }
 
-@Get('revenue-trend')
-getRevenueTrend(@Query('type') type: 'week' | 'month') {
-  return this.dashboardService.getRevenueTrend(type);
-}
+  @Get('revenue-trend')
+  getRevenueTrend(@Query('type') type: 'week' | 'month', @Request() req) {
+    return this.dashboardService.getRevenueTrend(req.user.companyId, type);
+  }
 
   @Get('recent-complaints')
-  getRecentComplaints() {
-    return this.dashboardService.getRecentComplaints();
+  getRecentComplaints(@Request() req) {
+    return this.dashboardService.getRecentComplaints(req.user.companyId);
   }
 
   @Get('sla-alerts')
-  getSlaAlerts() {
-    return this.dashboardService.getSlaAlerts();
+  getSlaAlerts(@Request() req) {
+    return this.dashboardService.getSlaAlerts(req.user.companyId);
   }
 }

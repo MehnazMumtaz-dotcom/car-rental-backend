@@ -88,7 +88,7 @@ export class BookingsService {
     return newCustomer.id;
   }
 
-  async create(createBookingDto: CreateBookingDto) {
+  async create(createBookingDto: CreateBookingDto, companyId: number) {
     const {
       forceOverride,
       source,
@@ -132,7 +132,7 @@ export class BookingsService {
       customerId ?? null,
       customerName,
       phone,
-      createBookingDto.companyId,
+      companyId,
     );
 
     return this.prisma.booking.create({
@@ -147,6 +147,9 @@ export class BookingsService {
         totalPrice: totalPrice ?? rest.dailyRate,
         isOverride: forceOverride ?? false,
         source: bookingSource,
+        // Security fix: dto se aaya companyId trust nahi karna,
+        // hamesha logged-in admin ke token se lena
+        companyId,
       },
       include: {
         vehicle: true,
@@ -156,15 +159,21 @@ export class BookingsService {
     });
   }
 
-  async createOverride(createBookingDto: CreateBookingDto) {
-    return this.create({
-      ...createBookingDto,
-      forceOverride: true,
-    });
+  async createOverride(createBookingDto: CreateBookingDto, companyId: number) {
+    return this.create(
+      {
+        ...createBookingDto,
+        forceOverride: true,
+      },
+      companyId,
+    );
   }
 
-  findAll() {
+  findAll(companyId: number) {
     return this.prisma.booking.findMany({
+      where: {
+        companyId,
+      },
       orderBy: { createdAt: 'desc' },
       include: {
         vehicle: true,
@@ -174,9 +183,12 @@ export class BookingsService {
     });
   }
 
-  findOne(id: number) {
-    return this.prisma.booking.findUnique({
-      where: { id },
+  findOne(id: number, companyId: number) {
+    return this.prisma.booking.findFirst({
+      where: {
+        id,
+        companyId,
+      },
       include: {
         vehicle: true,
         customer: true,
@@ -185,7 +197,7 @@ export class BookingsService {
     });
   }
 
-  async update(id: number, updateBookingDto: UpdateBookingDto) {
+  async update(id: number, updateBookingDto: UpdateBookingDto, companyId: number) {
     const {
       forceOverride,
       vehicleId,
@@ -196,8 +208,12 @@ export class BookingsService {
       ...rest
     } = updateBookingDto;
 
-    const existing = await this.prisma.booking.findUnique({
-      where: { id },
+    // Security fix: sirf apni company ki booking update karne dein
+    const existing = await this.prisma.booking.findFirst({
+      where: {
+        id,
+        companyId,
+      },
     });
 
     if (!existing) {
@@ -267,9 +283,12 @@ export class BookingsService {
     });
   }
 
-  remove(id: number) {
-    return this.prisma.booking.delete({
-      where: { id },
+  remove(id: number, companyId: number) {
+    return this.prisma.booking.deleteMany({
+      where: {
+        id,
+        companyId,
+      },
     });
   }
 }

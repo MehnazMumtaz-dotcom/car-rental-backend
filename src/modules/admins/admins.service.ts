@@ -15,6 +15,7 @@ export class AdminService {
     private prisma: PrismaService,
     private auditLogs: AuditLogsService,
   ) {}
+
   async create(
     dto: any,
     currentUser: any,
@@ -36,12 +37,15 @@ export class AdminService {
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
 
+    // Security fix: companyId hamesha logged-in admin ke token se lein,
+    // dto se aaya companyId trust na karein (warna koi bhi admin
+    // kisi doosri company mein sub-admin bana sakta hai)
     const admin = await this.prisma.admin.create({
       data: {
         name: dto.name,
         email: dto.email,
         password: hashedPassword,
-        companyId: dto.companyId,
+        companyId: currentUser.companyId,
         role: dto.role,
         permissions: Array.isArray(dto.permissions) ? dto.permissions : [],
         profile: {
@@ -65,8 +69,12 @@ export class AdminService {
 
     return result;
   }
-  findAll() {
+
+  findAll(companyId: number) {
     return this.prisma.admin.findMany({
+      where: {
+        companyId,
+      },
       select: {
         id: true,
         name: true,
@@ -82,15 +90,17 @@ export class AdminService {
       },
     });
   }
-  async findOne(id: number) {
+
+  async findOne(id: number, companyId: number) {
 
     if (!id) {
       throw new BadRequestException('Invalid ID');
     }
 
-    const admin = await this.prisma.admin.findUnique({
+    const admin = await this.prisma.admin.findFirst({
       where: {
         id,
+        companyId,
       },
       select: {
         id: true,
@@ -113,6 +123,7 @@ export class AdminService {
 
     return admin;
   }
+
   async update(
     id: number,
     dto: any,
@@ -123,15 +134,18 @@ export class AdminService {
       throw new BadRequestException('Invalid ID');
     }
 
-    const existingAdmin = await this.prisma.admin.findUnique({
+    // Security fix: sirf apni company ke admin ko update karne dein
+    const existingAdmin = await this.prisma.admin.findFirst({
       where: {
         id,
+        companyId: currentUser.companyId,
       },
     });
 
     if (!existingAdmin) {
       throw new NotFoundException('Admin not found');
     }
+
     if (dto.email && dto.email !== existingAdmin.email) {
       const emailExists = await this.prisma.admin.findUnique({
         where: { email: dto.email },
@@ -145,7 +159,8 @@ export class AdminService {
     let data: any = {
       name: dto.name,
       email: dto.email,
-      companyId: dto.companyId,
+      // companyId ko update karne nahi dena — warna admin khud ko
+      // kisi doosri company mein move kar sakta hai
       role: dto.role,
       permissions: Array.isArray(dto.permissions) ? dto.permissions : undefined,
       status: dto.status,
@@ -190,9 +205,11 @@ export class AdminService {
       throw new BadRequestException('Invalid ID');
     }
 
-    const exists = await this.prisma.admin.findUnique({
+    // Security fix: sirf apni company ke admin ko delete karne dein
+    const exists = await this.prisma.admin.findFirst({
       where: {
         id,
+        companyId: currentUser.companyId,
       },
     });
 

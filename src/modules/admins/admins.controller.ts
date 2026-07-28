@@ -27,6 +27,7 @@ export class AdminController {
   constructor(
     private service: AdminService,
   ) {}
+
   @UseGuards(AuthGuard, RoleGuard)
   @Roles('ADMIN')
   @Post()
@@ -41,26 +42,35 @@ export class AdminController {
     );
 
   }
+
   @UseGuards(AuthGuard, RoleGuard)
   @Roles('ADMIN')
   @Get()
-  findAll() {
+  findAll(
+    @Request() req,
+  ) {
 
-    return this.service.findAll();
+    return this.service.findAll(
+      req.user.companyId,
+    );
 
   }
+
   @UseGuards(AuthGuard, RoleGuard)
   @Roles('ADMIN')
   @Get(':id')
   findOne(
-    @Param('id') id:string,
+    @Param('id') id: string,
+    @Request() req,
   ) {
 
     return this.service.findOne(
       Number(id),
+      req.user.companyId,
     );
 
   }
+
   @UseGuards(AuthGuard, RoleGuard)
   @Roles('ADMIN')
   @Put(':id')
@@ -77,6 +87,7 @@ export class AdminController {
     );
 
   }
+
   @UseGuards(AuthGuard, RoleGuard)
   @Roles('ADMIN')
   @Patch(':id')
@@ -93,6 +104,7 @@ export class AdminController {
     );
 
   }
+
   @UseGuards(AuthGuard, RoleGuard)
   @Roles('ADMIN')
   @Delete(':id')
