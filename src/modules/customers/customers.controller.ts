@@ -17,9 +17,12 @@ import { CreateCustomerDto } from './dto/create-customer.dto';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { RoleGuard } from '../../common/guards/role.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { PermissionsGuard } from '../../common/guards/permissions.guard';
+import { RequirePermission } from '../../common/decorators/permissions.decorator';
 
 @Controller('customers')
-@UseGuards(AuthGuard, RoleGuard)
+@UseGuards(AuthGuard, RoleGuard, PermissionsGuard)
+@RequirePermission('customers')
 export class CustomersController {
   constructor(
     private readonly customersService: CustomersService,
@@ -32,21 +35,21 @@ export class CustomersController {
   }
 
   @Get()
-@Roles('ADMIN', 'MANAGER')
-findAll(@Req() req) {
-  return this.customersService.findAll(
-    req.user.companyId,
-  );
-}
+  @Roles('ADMIN', 'SUB_ADMIN')
+  findAll(@Req() req) {
+    return this.customersService.findAll(
+      req.user.companyId,
+    );
+  }
 
   @Get('company/:companyId')
-  @Roles('ADMIN', 'MANAGER')
+  @Roles('ADMIN', 'SUB_ADMIN')
   findAllByCompany(@Param('companyId') companyId: string) {
     return this.customersService.findAll(Number(companyId));
   }
 
   @Get('company/:companyId/:id')
-  @Roles('ADMIN', 'MANAGER')
+  @Roles('ADMIN', 'SUB_ADMIN')
   findOneByCompany(
     @Param('companyId') companyId: string,
     @Param('id') id: string,
@@ -58,7 +61,7 @@ findAll(@Req() req) {
   }
 
   @Get(':id')
-  @Roles('ADMIN', 'MANAGER')
+  @Roles('ADMIN', 'SUB_ADMIN')
   findOne(@Param('id') id: string) {
     return this.customersService.findOne(Number(id));
   }

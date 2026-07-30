@@ -41,9 +41,9 @@ export class ProfileController {
   }
 
   @Get()
-  getAllProfiles(){
+  getAllProfiles(@Req() req: any){
 
-    return this.profileService.getAllProfiles();
+    return this.profileService.getAllProfiles(req.user.companyId);
 
   }
 

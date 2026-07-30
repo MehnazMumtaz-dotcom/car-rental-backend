@@ -1,9 +1,12 @@
 import { Controller, Get, Query, Request, UseGuards } from '@nestjs/common';
 import { DashboardService } from './dashboard.service';
 import { AuthGuard } from '../../common/guards/auth.guard';
+import { PermissionsGuard } from '../../common/guards/permissions.guard';
+import { RequirePermission } from '../../common/decorators/permissions.decorator';
 
 @Controller('dashboard')
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard, PermissionsGuard)
+@RequirePermission('dashboard')
 export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
 

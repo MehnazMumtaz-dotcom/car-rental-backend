@@ -18,12 +18,13 @@ import { UpdateAdminDto } from './dto/update-admin.dto';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { RoleGuard } from '../../common/guards/role.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
-
+import { PermissionsGuard } from '../../common/guards/permissions.guard';
+import { RequirePermission } from '../../common/decorators/permissions.decorator';
 
 @Controller('admin')
+@UseGuards(AuthGuard, RoleGuard, PermissionsGuard)
+@RequirePermission('subAdmins')
 export class AdminController {
-
-
   constructor(
     private service: AdminService,
   ) {}

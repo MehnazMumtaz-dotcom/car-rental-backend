@@ -21,9 +21,12 @@ import { CreateComplaintDto } from './dto/create-complaint.dto';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { RoleGuard } from '../../common/guards/role.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { PermissionsGuard } from '../../common/guards/permissions.guard';
+import { RequirePermission } from '../../common/decorators/permissions.decorator';
 
 @Controller('complaints')
-@UseGuards(AuthGuard, RoleGuard)
+@UseGuards(AuthGuard, RoleGuard, PermissionsGuard)
+@RequirePermission('complaints')
 export class ComplaintsController {
   constructor(
     private readonly service: ComplaintsService,

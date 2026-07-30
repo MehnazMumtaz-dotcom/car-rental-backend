@@ -43,9 +43,15 @@ export class ProfileService {
     };
 
   }
-  async getAllProfiles(){
+  async getAllProfiles(companyId: number){
 
     return this.prisma.profile.findMany({
+
+      where: {
+        admin: {
+          companyId,
+        },
+      },
 
       include:{
         admin:{

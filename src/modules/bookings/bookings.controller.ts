@@ -12,7 +12,8 @@ import {
   ParseIntPipe,
   Request,
 } from '@nestjs/common';
-
+import { PermissionsGuard } from '../../common/guards/permissions.guard';
+import { RequirePermission } from '../../common/decorators/permissions.decorator';
 import { BookingsService } from './bookings.service';
 import {
   CreateBookingDto,
@@ -25,7 +26,8 @@ import { RoleGuard } from '../../common/guards/role.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 
 @Controller('bookings')
-@UseGuards(AuthGuard, RoleGuard)
+@UseGuards(AuthGuard, RoleGuard, PermissionsGuard)
+@RequirePermission('bookingCalendar')
 export class BookingsController {
   constructor(private readonly bookingsService: BookingsService) {}
 
