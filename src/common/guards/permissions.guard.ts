@@ -19,7 +19,6 @@ export class PermissionsGuard implements CanActivate {
       [context.getHandler(), context.getClass()],
     );
 
-    // Agar route per koi permission requirement nahi hai, allow karein
     if (!requiredPermission) {
       return true;
     }
@@ -31,7 +30,6 @@ export class PermissionsGuard implements CanActivate {
       throw new ForbiddenException('User not found');
     }
 
-    // ADMIN role ko hamesha full access — permissions check bypass
     if (user.role === 'ADMIN') {
       return true;
     }

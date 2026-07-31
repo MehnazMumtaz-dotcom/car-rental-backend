@@ -4,58 +4,55 @@ import {
   Injectable,
   ForbiddenException,
 } from '@nestjs/common';
+
 import { Reflector } from '@nestjs/core';
+
 
 @Injectable()
 export class RoleGuard implements CanActivate {
-  constructor(private reflector: Reflector) {}
 
-  canActivate(context: ExecutionContext): boolean {
-    const request = context.switchToHttp().getRequest();
-    const user = request.user;
+  constructor(
+    private reflector: Reflector,
+  ) {}
 
-    if (!user) {
-      throw new ForbiddenException('User not found');
-    }
 
-    // 🔹 Roles from decorator
+  canActivate(
+    context: ExecutionContext,
+  ): boolean {
+
     const requiredRoles = this.reflector.getAllAndOverride<string[]>(
       'roles',
       [context.getHandler(), context.getClass()],
     );
 
-    // 🔹 Permissions from decorator
-    const requiredPermissions = this.reflector.getAllAndOverride<string[]>(
-      'permissions',
-      [context.getHandler(), context.getClass()],
-    );
-
-    // 🚨 DEFAULT DENY (IMPORTANT)
-    if (
-      (!requiredRoles || requiredRoles.length === 0) &&
-      (!requiredPermissions || requiredPermissions.length === 0)
-    ) {
-      throw new ForbiddenException('No access rule defined');
+    if (!requiredRoles || requiredRoles.length === 0) {
+      return true;
     }
 
-    // ✅ Role check
-    if (requiredRoles && requiredRoles.length > 0) {
-      const hasRole = requiredRoles.includes(user.role);
-      if (!hasRole) {
-        throw new ForbiddenException('Role access denied');
-      }
-    }
 
-    // ✅ Permission check
-    if (requiredPermissions && requiredPermissions.length > 0) {
-      const hasPermission = requiredPermissions.some((perm) =>
-        user.permissions?.includes(perm),
+    const request =
+      context.switchToHttp().getRequest();
+
+
+    const user = request.user;
+
+    if (!user) {
+      throw new ForbiddenException(
+        'User not found',
       );
-
-      if (!hasPermission) {
-        throw new ForbiddenException('Permission denied');
-      }
     }
+
+
+    const hasRole =
+      requiredRoles.includes(user.role);
+
+
+    if (!hasRole) {
+      throw new ForbiddenException(
+        'Access denied',
+      );
+    }
+
 
     return true;
   }

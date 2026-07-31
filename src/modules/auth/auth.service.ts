@@ -192,6 +192,8 @@ export class AuthService {
         email: admin.email,
         role: admin.role,
         companyId: admin.companyId,
+        permissions: admin.permissions,
+
       },
     };
 
