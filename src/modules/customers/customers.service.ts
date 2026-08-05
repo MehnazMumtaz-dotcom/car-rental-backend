@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CustomerStatus } from '@prisma/client';
 
@@ -6,7 +6,7 @@ import { CustomerStatus } from '@prisma/client';
 export class CustomersService {
   constructor(private prisma: PrismaService) {}
 
-  async create(dto: any) {
+  async create(dto: any){
     return this.prisma.customer.create({
       data: {
         name: dto.name.trim(),
@@ -22,18 +22,27 @@ export class CustomersService {
     });
   }
 
-  async findAll(companyId?: number) {
+  async findAll(companyId: number) {
     return this.prisma.customer.findMany({
-      where: companyId ? { companyId } : {},
+      where: { companyId },
       orderBy: { createdAt: 'desc' },
       include: { company: true },
     });
   }
-  async findOne(id: number) {
-    return this.prisma.customer.findUnique({
-      where: { id },
+
+  async findOne(id: number, companyId: number) {
+    this.validateId(id);
+
+    const customer = await this.prisma.customer.findFirst({
+      where: { id, companyId },
       include: { company: true },
     });
+
+    if (!customer) {
+      throw new NotFoundException('Customer not found');
+    }
+
+    return customer;
   }
 
   async findOneByCompany(companyId: number, id: number) {
@@ -46,8 +55,16 @@ export class CustomersService {
     });
   }
 
-  async update(id: number, dto: any) {
+  async update(id: number, dto: any, companyId: number) {
     this.validateId(id);
+
+    const existing = await this.prisma.customer.findFirst({
+      where: { id, companyId },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Customer not found');
+    }
 
     return this.prisma.customer.update({
       where: { id },
@@ -60,7 +77,10 @@ export class CustomersService {
     this.validateId(id);
 
     return this.prisma.customer.update({
-      where: { id },
+      where: {
+  id,
+  companyId,
+},
       data: this.updateData(dto),
     });
   }
@@ -103,8 +123,16 @@ export class CustomersService {
     }
   }
 
-  async remove(id: number) {
+  async remove(id: number, companyId: number) {
     this.validateId(id);
+
+    const existing = await this.prisma.customer.findFirst({
+      where: { id, companyId },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Customer not found');
+    }
 
     return this.prisma.customer.delete({
       where: { id },
@@ -115,7 +143,10 @@ export class CustomersService {
     this.validateId(id);
 
     return this.prisma.customer.delete({
-      where: { id },
+      where: {
+        id,
+        companyId,
+      },
     });
   }
 }

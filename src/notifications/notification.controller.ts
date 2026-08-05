@@ -38,13 +38,14 @@ export class NotificationController {
     );
   }
 
-  @Patch(':id/read')
-  markAsRead(@Req() req: any, @Param('id') id: string) {
-    return this.notificationService.markAsRead(
-      Number(id),
-      this.getUserId(req),
-    );
-  }
+@Patch(':id/read')
+markAsRead(@Req() req: any, @Param('id') id: string) {
+  return this.notificationService.markAsRead(
+    Number(id),
+    this.getUserId(req),
+    this.getCompanyId(req),
+  );
+}
 
   @Patch('read-all')
   markAllAsRead(@Req() req: any) {

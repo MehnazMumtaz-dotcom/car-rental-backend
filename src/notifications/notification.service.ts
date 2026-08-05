@@ -10,8 +10,8 @@ export class NotificationService {
   private transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: 'your-email@gmail.com',
-      pass: 'your-app-password',
+      user: process.env.SMTP_EMAIL,
+      pass: process.env.SMTP_PASSWORD,
     },
   });
 
@@ -28,15 +28,19 @@ export class NotificationService {
       },
     });
 
-    console.log('📩 Notification saved + email sent');
-
-    await this.transporter.sendMail({
-      from: 'your-email@gmail.com',
-      to: 'admin@gmail.com',
-      subject: '🚨 Complaint Escalation Alert',
-      text: message,
-    });
-    console.log('📩 Notification saved + email sent');
+    try {
+      await this.transporter.sendMail({
+        from: `"Admin Panel" <${process.env.SMTP_EMAIL}>`,
+        to: process.env.SMTP_EMAIL,
+        subject: '🚨 Complaint Escalation Alert',
+        text: message,
+      });
+      console.log('📩 Notification saved + email sent');
+    } catch (error) {
+      console.error('❌ Escalation email failed:', error);
+      // Email fail ho to bhi notification database mein already save ho chuki hai,
+      // is liye poori escalation process crash nahi hogi
+    }
   }
 
   async getNotifications(companyId: number, adminId: number) {
@@ -58,10 +62,10 @@ export class NotificationService {
 
   }
 
-  async markAsRead(notificationId: number, adminId: number) {
+  async markAsRead(notificationId: number, adminId: number, companyId: number) {
 
-    const notification = await this.prisma.notification.findUnique({
-      where: { id: notificationId },
+    const notification = await this.prisma.notification.findFirst({
+      where: { id: notificationId, companyId },
     });
 
     if (!notification) {

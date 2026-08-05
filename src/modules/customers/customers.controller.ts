@@ -62,8 +62,8 @@ export class CustomersController {
 
   @Get(':id')
   @Roles('ADMIN', 'SUB_ADMIN')
-  findOne(@Param('id') id: string) {
-    return this.customersService.findOne(Number(id));
+  findOne(@Param('id') id: string, @Req() req) {
+    return this.customersService.findOne(Number(id), req.user.companyId);
   }
 
   @Patch(':id')
@@ -71,10 +71,12 @@ export class CustomersController {
   patch(
     @Param('id') id: string,
     @Body() dto: any,
+    @Req() req,
   ) {
     return this.customersService.update(
       Number(id),
       dto,
+      req.user.companyId,
     );
   }
 
@@ -96,10 +98,12 @@ export class CustomersController {
   put(
     @Param('id') id: string,
     @Body() dto: any,
+    @Req() req,
   ) {
     return this.customersService.update(
       Number(id),
       dto,
+      req.user.companyId,
     );
   }
   @Put('company/:companyId/:id')
@@ -118,9 +122,10 @@ export class CustomersController {
 
   @Delete(':id')
   @Roles('ADMIN')
-  remove(@Param('id') id: string) {
+  remove(@Param('id') id: string, @Req() req) {
     return this.customersService.remove(
       Number(id),
+      req.user.companyId,
     );
   }
 

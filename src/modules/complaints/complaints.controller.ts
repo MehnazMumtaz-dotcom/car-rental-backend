@@ -40,6 +40,7 @@ create(
   return this.service.create(
     body,
     req.user.sub,
+    req.user.companyId,
   );
 }
 
@@ -49,18 +50,21 @@ create(
 assign(
   @Param('id', ParseIntPipe) id: number,
   @Body() body: { adminId: number },
+  @Req() req,
 ) {
   return this.service.assignComplaint(
     id,
     body.adminId,
+    req.user.companyId,
   );
 }
   @Patch(':id/resolve')
   @Roles('ADMIN', 'SUB_ADMIN')
   resolve(
     @Param('id', ParseIntPipe) id: number,
+    @Req() req,
   ) {
-    return this.service.resolveComplaint(id);
+    return this.service.resolveComplaint(id, req.user.companyId);
   }
 
   @Get()
@@ -82,7 +86,8 @@ assign(
   @Roles('ADMIN')
   delete(
     @Param('id', ParseIntPipe) id: number,
+    @Req() req,
   ) {
-    return this.service.deleteComplaint(id);
+    return this.service.deleteComplaint(id, req.user.companyId);
   }
 }

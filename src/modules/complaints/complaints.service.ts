@@ -15,7 +15,7 @@ import {
 export class ComplaintsService {
   constructor(private prisma: PrismaService) {}
 
-  async create(data: CreateComplaintDto, adminId: number) {
+  async create(data: CreateComplaintDto, adminId: number, companyId: number) {
     const booking = await this.prisma.booking.findUnique({
       where: { id: data.bookingId },
     });
@@ -24,7 +24,9 @@ export class ComplaintsService {
       throw new NotFoundException('Booking not found');
     }
 
-    if (booking.companyId !== data.companyId) {
+    // Security fix: request body ke companyId per bharosa nahi karna,
+    // hamesha logged-in admin ke apne companyId se match check karna
+    if (booking.companyId !== companyId) {
       throw new BadRequestException('Company mismatch');
     }
     const text = data.description?.toLowerCase() || '';
@@ -82,6 +84,7 @@ const slaDeadline = new Date(
     const complaint = await this.prisma.complaint.create({
     data: {
   ...data,
+  companyId, // Security fix: request body ka companyId ignore, apna hi use karo
   category,
   priority, 
   createdById: adminId,
@@ -102,10 +105,10 @@ const slaDeadline = new Date(
     return complaint;
   }
 
-async assignComplaint(id: number, adminId: number) {
+async assignComplaint(id: number, adminId: number, companyId: number) {
 
-  const complaint = await this.prisma.complaint.findUnique({
-    where: { id },
+  const complaint = await this.prisma.complaint.findFirst({
+    where: { id, companyId },
   });
 
   if (!complaint) {
@@ -155,9 +158,9 @@ await this.prisma.notification.create({
 return updated;
 
 }
-  async resolveComplaint(id: number) {
-    const complaint = await this.prisma.complaint.findUnique({
-      where: { id },
+  async resolveComplaint(id: number, companyId: number) {
+    const complaint = await this.prisma.complaint.findFirst({
+      where: { id, companyId },
     });
 
     if (!complaint) {
@@ -212,9 +215,9 @@ if (complaint.status === ComplaintStatus.RESOLVED) {
       },
     });
   }
-  async deleteComplaint(id: number) {
-    const complaint = await this.prisma.complaint.findUnique({
-      where: { id },
+  async deleteComplaint(id: number, companyId: number) {
+    const complaint = await this.prisma.complaint.findFirst({
+      where: { id, companyId },
     });
 
     if (!complaint) {
