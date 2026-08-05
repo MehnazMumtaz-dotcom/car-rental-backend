@@ -169,9 +169,6 @@ async getRevenueByVehicle(companyId: number, type: string) {
       revenue,
     }),
   );
-
-  console.log("FINAL REVENUE RESPONSE:", result);
-
   return result;
 }
  async getComplaintSummary(companyId: number) {
