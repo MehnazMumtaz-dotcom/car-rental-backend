@@ -22,13 +22,29 @@ export class CustomersService {
     });
   }
 
-  async findAll(companyId: number) {
-    return this.prisma.customer.findMany({
-      where: { companyId },
-      orderBy: { createdAt: 'desc' },
-      include: { company: true },
-    });
-  }
+ async findAll(companyId: number) {
+  const customers = await this.prisma.customer.findMany({
+    where: { companyId },
+    orderBy: { createdAt: 'desc' },
+    include: {
+      company: true,
+      bookings: true, // 👈 ye add karna hai
+    },
+  });
+
+  return customers.map(c => {
+    const { bookings, ...rest } = c;
+
+    return {
+      ...rest,
+      bookings: bookings.length, 
+      spent: bookings.reduce(
+        (sum, b) => sum + (b.totalPrice || 0),
+        0
+      ), 
+    };
+  });
+}
 
   async findOne(id: number, companyId: number) {
     this.validateId(id);
