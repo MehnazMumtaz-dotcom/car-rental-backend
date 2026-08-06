@@ -11,8 +11,6 @@ import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
-  private twoFACodes = new Map<string, { code: string; expiresAt: number }>();
-
 
   constructor(
     private jwtService: JwtService,
@@ -67,26 +65,44 @@ export class AuthService {
   ) {
 
 
-    await this.validateUser(
+    const admin = await this.validateUser(
       email,
       password,
     );
 
 
-    const code = Math.floor(
+    // Plain (asal) OTP — sirf email mein bhejne ke liye, kabhi save nahi hoga
+    const plainOtp = Math.floor(
       100000 + Math.random() * 900000,
     ).toString();
 
+    // Hashed version — yehi database mein save hoga, plain text kabhi nahi
+    const hashedOtp = await bcrypt.hash(plainOtp, 10);
 
-
-    const expiresAt = Date.now() + 10 * 60 * 1000;
-
-    this.twoFACodes.set(
-      email,
-      { code, expiresAt },
+    const otpExpiry = new Date(
+      Date.now() + 10 * 60 * 1000, // 10 minute expiry
     );
 
-      await this.emailService.sendOTP(email, code);
+    // Upsert: agar purana OTP entry maujood hai to overwrite,
+    // warna nayi bana di jayegi — naye OTP request per purana
+    // automatically replace ho jata hai
+    await this.prisma.profile.upsert({
+      where: {
+        adminId: admin.id,
+      },
+      update: {
+        otp: hashedOtp,
+        otpExpiry,
+      },
+      create: {
+        adminId: admin.id,
+        otp: hashedOtp,
+        otpExpiry,
+      },
+    });
+
+    await this.emailService.sendOTP(email, plainOtp);
+
     return {
       message:'2FA code sent',
     };
@@ -99,36 +115,12 @@ export class AuthService {
     ip?: string | null,
   ) {
 
-
-    const savedEntry =
-      this.twoFACodes.get(email);
-
-
-    if (
-      !savedEntry ||
-      savedEntry.code !== code
-    ) {
-      throw new UnauthorizedException(
-        'Invalid 2FA code',
-      );
-    }
-
-    if (Date.now() > savedEntry.expiresAt) {
-      this.twoFACodes.delete(email);
-      throw new UnauthorizedException(
-        '2FA code expired',
-      );
-    }
-
-
     const admin =
       await this.prisma.admin.findUnique({
         where:{
           email,
         },
       });
-
-
 
     if(!admin){
 
@@ -137,7 +129,53 @@ export class AuthService {
       );
 
     }
-    this.twoFACodes.delete(email);
+
+    const profile = await this.prisma.profile.findUnique({
+      where: {
+        adminId: admin.id,
+      },
+    });
+
+    if (!profile || !profile.otp || !profile.otpExpiry) {
+      throw new UnauthorizedException(
+        'No pending 2FA request found. Please login again.',
+      );
+    }
+
+    // Expiry check pehle — agar expire ho chuka hai to seedha clean kar dein
+    if (Date.now() > profile.otpExpiry.getTime()) {
+
+      await this.prisma.profile.update({
+        where: { adminId: admin.id },
+        data: { otp: null, otpExpiry: null },
+      });
+
+      throw new UnauthorizedException(
+        '2FA code expired',
+      );
+    }
+
+    // Hashed OTP se compare — bcrypt.compare plain code ko hash se match karta hai
+    const isCodeValid = await bcrypt.compare(code, profile.otp);
+
+    if (!isCodeValid) {
+      throw new UnauthorizedException(
+        'Invalid 2FA code',
+      );
+    }
+
+    // Verify successful — OTP ab turant database se clear kar dein
+    // taake dobara wahi code use na ho sake (single-use guarantee)
+    await this.prisma.profile.update({
+      where: { adminId: admin.id },
+      data: {
+        otp: null,
+        otpExpiry: null,
+        lastLoginDevice: userAgent,
+        lastLoginIp: ip,
+      },
+    });
+
     await this.prisma.admin.update({
 
       where:{
@@ -148,20 +186,6 @@ export class AuthService {
         lastLogin:new Date(),
       },
 
-    });
-    await this.prisma.profile.upsert({
-      where:{
-        adminId: admin.id,
-      },
-      update:{
-        lastLoginDevice: userAgent,
-        lastLoginIp: ip,
-      },
-      create:{
-        adminId: admin.id,
-        lastLoginDevice: userAgent,
-        lastLoginIp: ip,
-      },
     });
 
 

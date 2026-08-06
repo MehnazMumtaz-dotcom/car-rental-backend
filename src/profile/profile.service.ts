@@ -108,10 +108,12 @@ export class ProfileService {
       throw new BadRequestException('Admin not found');
     }
 
-    const otp =
+    const plainOtp =
       Math.floor(
         100000 + Math.random()*900000
       ).toString();
+
+    const hashedOtp = await bcrypt.hash(plainOtp, 10);
 
 
     await this.prisma.profile.upsert({
@@ -121,7 +123,7 @@ export class ProfileService {
       },
 
       update:{
-        otp,
+        otp:hashedOtp,
         otpExpiry:new Date(
           Date.now()+5*60*1000
         )
@@ -130,7 +132,7 @@ export class ProfileService {
 
       create:{
         adminId:userId,
-        otp,
+        otp:hashedOtp,
         otpExpiry:new Date(
           Date.now()+5*60*1000
         )
@@ -138,14 +140,14 @@ export class ProfileService {
 
     });
 
-    await this.emailService.sendOTP(admin.email, otp);
+    await this.emailService.sendOTP(admin.email, plainOtp);
 
     return {
       message:'OTP sent successfully'
     };
 
   }
-  async verifyOtp(userId:number, otp:string){
+  async verifyOtp(userId:number, code:string){
 
 
     const profile =
@@ -158,7 +160,7 @@ export class ProfileService {
       });
 
 
-    if(!profile || !profile.otp){
+    if(!profile || !profile.otp || !profile.otpExpiry){
 
       throw new BadRequestException(
         'OTP not found'
@@ -167,8 +169,20 @@ export class ProfileService {
     }
 
 
+    if (Date.now() > profile.otpExpiry.getTime()) {
 
-    if(profile.otp !== otp){
+      await this.prisma.profile.update({
+        where: { adminId: userId },
+        data: { otp: null, otpExpiry: null },
+      });
+
+      throw new BadRequestException('OTP expired');
+    }
+
+
+    const isCodeValid = await bcrypt.compare(code, profile.otp);
+
+    if(!isCodeValid){
 
       throw new BadRequestException(
         'Invalid OTP'
