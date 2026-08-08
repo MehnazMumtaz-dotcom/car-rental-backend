@@ -6,6 +6,13 @@ import { CustomerStatus } from '@prisma/client';
 export class CustomersService {
   constructor(private prisma: PrismaService) {}
 
+  private isCurrentlyActive(booking: { status: string; endDate: Date }): boolean {
+    if (booking.status === 'CANCELLED' || booking.status === 'COMPLETED') {
+      return false;
+    }
+    return new Date(booking.endDate) >= new Date();
+  }
+
   async create(dto: any){
     return this.prisma.customer.create({
       data: {
@@ -22,43 +29,128 @@ export class CustomersService {
     });
   }
 
- async findAll(companyId: number) {
-  const customers = await this.prisma.customer.findMany({
-    where: { companyId },
-    orderBy: { createdAt: 'desc' },
-    include: {
-      company: true,
-      bookings: true, // 👈 ye add karna hai
-    },
-  });
+  async findAll(companyId: number) {
+    const customers = await this.prisma.customer.findMany({
+      where: { companyId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        company: true,
+        bookings: true,
+      },
+    });
 
-  return customers.map(c => {
-    const { bookings, ...rest } = c;
+    return customers.map(c => {
+      const { bookings, ...rest } = c;
 
-    return {
-      ...rest,
-      bookings: bookings.length, 
-      spent: bookings.reduce(
+      const totalSpent = bookings.reduce(
         (sum, b) => sum + (b.totalPrice || 0),
-        0
-      ), 
-    };
-  });
-}
+        0,
+      );
+
+      const activeBookings = bookings.filter((b) =>
+        this.isCurrentlyActive(b),
+      ).length;
+
+      const lastActivity = bookings.length
+        ? bookings.reduce((latest, b) =>
+            b.createdAt > latest ? b.createdAt : latest,
+          bookings[0].createdAt)
+        : null;
+
+      return {
+        ...rest,
+        bookings: bookings.length,
+        spent: totalSpent,
+        joined: c.createdAt,
+        totalBookings: bookings.length,
+        totalSpent,
+        activeBookings,
+        lastActivity,
+      };
+    });
+  }
 
   async findOne(id: number, companyId: number) {
     this.validateId(id);
 
     const customer = await this.prisma.customer.findFirst({
       where: { id, companyId },
-      include: { company: true },
+      include: {
+        company: true,
+        bookings: {
+          include: {
+            vehicle: true,
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+        },
+      },
     });
 
     if (!customer) {
       throw new NotFoundException('Customer not found');
     }
 
-    return customer;
+    const { bookings, ...rest } = customer;
+
+    const totalSpent = bookings.reduce(
+      (sum, b) => sum + (b.totalPrice || 0),
+      0,
+    );
+
+    const activeBookings = bookings.filter((b) =>
+      this.isCurrentlyActive(b),
+    ).length;
+
+    const now = new Date();
+
+    const bookingsWithDisplayStatus = bookings.map((b) => {
+      let displayStatus: string;
+
+      if (b.status === 'CANCELLED') {
+        displayStatus = 'Cancelled';
+      } else if (b.status === 'COMPLETED') {
+        displayStatus = 'Completed';
+      } else if (now < new Date(b.startDate)) {
+        displayStatus = 'Upcoming';
+      } else if (now > new Date(b.endDate)) {
+        displayStatus = 'Completed';
+      } else {
+        displayStatus = 'Ongoing';
+      }
+
+      return {
+        id: b.id,
+        vehicleName: b.vehicle?.name || 'Unknown Vehicle',
+        startDate: b.startDate,
+        endDate: b.endDate,
+        totalPrice: b.totalPrice,
+        rawStatus: b.status,
+        displayStatus,
+        createdAt: b.createdAt,
+      };
+    });
+
+    return {
+      ...rest,
+
+      joined: customer.createdAt,
+
+      totalBookings: bookings.length,
+
+      totalSpent,
+
+      activeBookings,
+
+      lastActivity: bookings.length
+        ? bookings.reduce((latest, b) =>
+            b.createdAt > latest ? b.createdAt : latest,
+          bookings[0].createdAt)
+        : null,
+
+      bookingsList: bookingsWithDisplayStatus,
+    };
   }
 
   async findOneByCompany(companyId: number, id: number) {

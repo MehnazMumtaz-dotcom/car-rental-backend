@@ -131,7 +131,7 @@ async getBookingTrend(companyId: number, type: string) {
     value: map[key],
   }));
 }
-async getRevenueByVehicle(companyId: number, type: string) {
+async getRevenueByCity(companyId: number, type: string) {
   const now = dayjs();
 
   let startDate;
@@ -149,26 +149,24 @@ async getRevenueByVehicle(companyId: number, type: string) {
         gte: startDate.toDate(),
       },
     },
-    include: {
-      vehicle: true,
-    },
   });
 
   const grouped: Record<string, number> = {};
 
   bookings.forEach((b) => {
-    const vehicle = b.vehicle?.name || "Unknown";
+    const city = b.city || "Unknown";
 
-    grouped[vehicle] =
-      (grouped[vehicle] || 0) + (b.totalPrice || 0);
+    grouped[city] =
+      (grouped[city] || 0) + (b.totalPrice || 0);
   });
 
   const result = Object.entries(grouped).map(
-    ([vehicle, revenue]) => ({
-      vehicle,
+    ([city, revenue]) => ({
+      city,
       revenue,
     }),
   );
+
   return result;
 }
  async getComplaintSummary(companyId: number) {

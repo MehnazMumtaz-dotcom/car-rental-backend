@@ -26,15 +26,15 @@ getBookingTrend(
   );
 }
 
-  @Get('revenue-by-vehicle')
-  getRevenue(@Req() req,
-  @Query("type") type: string) {
-     const filterType = type || "weekly"; 
-    return this.reportsService.getRevenueByVehicle(
-      req.user.companyId,
-        filterType 
-    );
-  }
+  @Get('revenue-by-city')
+getRevenue(@Req() req,
+@Query("type") type: string) {
+   const filterType = type || "weekly"; 
+  return this.reportsService.getRevenueByCity(
+    req.user.companyId,
+      filterType 
+  );
+}
 
   @Get('complaint-summary')
   getComplaints(@Req() req) {
